@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 concurrency:
   group: update-cidrs
@@ -43,6 +44,7 @@ jobs:
           python3 scripts/export_cloud_cidrs.py
 
       - name: Commit & push if changed
+        id: commit
         run: |
           set -euo pipefail
           if git status --porcelain | grep -E '^( M|A |\\?\\?) (data/goog\\.cidr\\.txt|data/cloud\\.cidr\\.txt|data/ipranges\\.remote\\.json)$' >/dev/null; then
@@ -51,7 +53,29 @@ jobs:
             git add data/goog.cidr.txt data/cloud.cidr.txt data/ipranges.remote.json
             git commit -m "chore: update CIDR lists"
             git push
+            echo "committed=true" >> "$GITHUB_OUTPUT"
           else
             echo "No changes in CIDR outputs."
+            echo "committed=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Generate release notes
+        if: steps.commit.outputs.committed == 'true'
+        id: release_notes
+        run: |
+          python3 scripts/generate_release_notes.py > release_notes.txt
+          cat release_notes.txt
+
+      - name: Create Release
+        if: steps.commit.outputs.committed == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v$(date +'%Y%m%d-%H%M%S')
+          name: "Google IP CIDR 更新 - $(date +'%Y-%m-%d %H:%M:%S') UTC"
+          body_path: release_notes.txt
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -62,6 +62,14 @@ python3 scripts/export_cloud_cidrs.py --out -
 - **仅在源数据变化时**才会下载 JSON、生成 CIDR 文件并提交更新
 - 若两者都未变化，则直接结束，不更新也不提交
 
+**自动 Release**：
+- 当检测到 CIDR 列表有更新并成功提交后，**会自动创建一个 GitHub Release**
+- Release 包含：
+  - CIDR 统计信息（goog.cidr.txt 和 cloud.cidr.txt 的数量）
+  - 数据源的最后修改时间
+  - 文件说明和数据源链接
+- Release 标签格式：`vYYYYMMDD-HHMMSS`（例如：`v20251227-153000`）
+
 **生成的文件**（位于 `data/` 目录）：
 - `goog.cidr.txt` - 所有 Google API服务的 IP 范围（纯 CIDR 列表）
 - `cloud.cidr.txt` - Google Cloud 的 IP 范围（纯 CIDR 列表）
