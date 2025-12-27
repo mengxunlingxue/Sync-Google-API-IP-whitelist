@@ -54,7 +54,7 @@ python3 scripts/export_cloud_cidrs.py --out -
 已提供 workflow：`.github/workflows/update-cidrs.yml`
 
 **触发方式**：
-- **定时触发**：每天 UTC 02:00 自动运行
+- **定时触发**：每小时整点 UTC 自动运行
 - **手动触发**：在 GitHub 仓库的 Actions 页面点击 "Run workflow" 可随时手动运行
 
 **更新逻辑**：
