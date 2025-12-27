@@ -69,6 +69,11 @@ python3 scripts/export_cloud_cidrs.py --out -
   - 数据源的最后修改时间
   - 文件说明和数据源链接
 - Release 标签格式：`vYYYYMMDD-HHMMSS`（例如：`v20251227-153000`）
+- **Release 附件文件**：
+  - `goog.json` - 原始 Google API IP 范围 JSON 文件
+  - `cloud.json` - 原始 Google Cloud IP 范围 JSON 文件
+  - `goog.cidr.txt` - 解析后的 Google API CIDR 列表
+  - `cloud.cidr.txt` - 解析后的 Google Cloud CIDR 列表
 
 **生成的文件**（位于 `data/` 目录）：
 - `goog.cidr.txt` - 所有 Google API服务的 IP 范围（纯 CIDR 列表）

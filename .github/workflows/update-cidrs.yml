@@ -73,6 +73,11 @@ jobs:
           tag_name: v$(date +'%Y%m%d-%H%M%S')
           name: "Google IP CIDR 更新 - $(date +'%Y-%m-%d %H:%M:%S') UTC"
           body_path: release_notes.txt
+          files: |
+            data/goog.json
+            data/cloud.json
+            data/goog.cidr.txt
+            data/cloud.cidr.txt
           draft: false
           prerelease: false
           generate_release_notes: false
