@@ -1,0 +1,58 @@
+name: Update Google IP CIDR lists
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # 每天 02:30 UTC 运行一次（你可按需调整）
+    - cron: "30 2 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-cidrs
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check remote metadata (ETag / Last-Modified)
+        id: remote
+        run: |
+          python3 scripts/check_ipranges_remote.py --out ipranges.remote.json >> "$GITHUB_OUTPUT"
+
+      - name: Fetch latest ipranges JSON
+        if: steps.remote.outputs.changed == 'true'
+        run: |
+          python3 scripts/fetch_goog_json.py
+          python3 scripts/fetch_cloud_json.py
+
+      - name: Export CIDR (pure list)
+        if: steps.remote.outputs.changed == 'true'
+        run: |
+          python3 scripts/export_goog_cidrs.py
+          python3 scripts/export_cloud_cidrs.py
+
+      - name: Commit & push if changed
+        run: |
+          set -euo pipefail
+          if git status --porcelain | grep -E '^( M|A |\\?\\?) (goog\\.cidr\\.txt|cloud\\.cidr\\.txt|ipranges\\.remote\\.json)$' >/dev/null; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add goog.cidr.txt cloud.cidr.txt ipranges.remote.json
+            git commit -m "chore: update CIDR lists"
+            git push
+          else
+            echo "No changes in CIDR outputs."
+          fi
+
+
