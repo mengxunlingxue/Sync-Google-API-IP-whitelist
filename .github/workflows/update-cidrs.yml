@@ -102,19 +102,66 @@ jobs:
 
       - name: Create Release
         if: steps.commit.outputs.committed == 'true' || github.event_name == 'workflow_dispatch'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v$(date +'%Y%m%d-%H%M%S')
-          name: "Google IP CIDR 更新 - $(date +'%Y-%m-%d %H:%M:%S') UTC"
-          body_path: release_notes.txt
-          files: |
-            data/goog.json
-            data/cloud.json
-            data/goog.cidr.txt
-            data/cloud.cidr.txt
-          draft: false
-          prerelease: false
-          generate_release_notes: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG_NAME="v$(date +'%Y%m%d-%H%M%S')"
+          RELEASE_NAME="Google IP CIDR 更新 - $(date +'%Y-%m-%d %H:%M:%S') UTC"
+          
+          # 创建 release
+          echo "创建 Release: $TAG_NAME"
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases" \
+            -d "{
+              \"tag_name\": \"$TAG_NAME\",
+              \"name\": \"$RELEASE_NAME\",
+              \"body\": $(cat release_notes.txt | python3 -c 'import sys, json; print(json.dumps(sys.stdin.read()))'),
+              \"draft\": false,
+              \"prerelease\": false
+            }")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+          
+          if [ "$HTTP_CODE" != "201" ]; then
+            echo "错误: 创建 release 失败 (HTTP $HTTP_CODE)"
+            echo "$BODY" | python3 -m json.tool 2>/dev/null || echo "$BODY"
+            exit 1
+          fi
+          
+          UPLOAD_URL=$(echo "$BODY" | python3 -c "import sys, json; print(json.load(sys.stdin).get('upload_url', '').split('{')[0])" 2>/dev/null || echo "")
+          
+          if [ -z "$UPLOAD_URL" ]; then
+            echo "错误: 无法获取 upload_url"
+            echo "$BODY" | python3 -m json.tool
+            exit 1
+          fi
+          
+          echo "Release 创建成功，开始上传文件..."
+          
+          # 上传文件
+          for file in data/goog.json data/cloud.json data/goog.cidr.txt data/cloud.cidr.txt; do
+            if [ -f "$file" ]; then
+              FILENAME=$(basename "$file")
+              echo "上传: $file -> $FILENAME"
+              HTTP_CODE=$(curl -s -w "%{http_code}" -o /dev/null -X POST \
+                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Content-Type: application/octet-stream" \
+                --data-binary "@$file" \
+                "$UPLOAD_URL?name=$FILENAME")
+              
+              if [ "$HTTP_CODE" = "201" ]; then
+                echo "  ✓ $FILENAME 上传成功"
+              else
+                echo "  ✗ $FILENAME 上传失败 (HTTP $HTTP_CODE)"
+              fi
+            else
+              echo "警告: $file 不存在，跳过"
+            fi
+          done
+          
+          echo ""
+          echo "Release 创建完成: https://github.com/${{ github.repository }}/releases/tag/$TAG_NAME"
 
