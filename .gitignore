@@ -1,6 +1,7 @@
-data/*.json
-data/*.cidr.txt
+data/goog.json
+data/cloud.json
 scripts/__pycache__/
 **/__pycache__/
 *.pyc
+.venv/
 

@@ -13,16 +13,26 @@ from _fetch_ipranges_common import extract_cidrs
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="将 goog.json 解析为纯 CIDR 列表（每行一个）")
-    parser.add_argument("--in", dest="in_path", default="data/goog.json", help="输入 JSON 文件路径（默认：data/goog.json）")
+    parser.add_argument(
+        "--in",
+        dest="in_path",
+        default="data/goog.json",
+        help="输入 JSON 文件路径（默认：data/goog.json）",
+    )
     parser.add_argument(
         "--out",
         dest="out_path",
-        default="goog.cidr.txt",
-        help="输出文件路径；使用 '-' 表示输出到 stdout（默认：goog.cidr.txt）",
+        default="data/goog.cidr.txt",
+        help="输出文件路径；使用 '-' 表示输出到 stdout（默认：data/goog.cidr.txt）",
     )
     args = parser.parse_args()
 
-    parsed = json.loads(Path(args.in_path).expanduser().read_text(encoding="utf-8"))
+    in_path = Path(args.in_path).expanduser()
+    if not in_path.exists():
+        print(f"ERROR: {in_path} not found", file=sys.stderr)
+        return 1
+
+    parsed = json.loads(in_path.read_text(encoding="utf-8"))
     cidrs = extract_cidrs(parsed)
     content = "\n".join(cidrs)
 
@@ -39,5 +49,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
 
