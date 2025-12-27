@@ -37,6 +37,27 @@ jobs:
           python3 scripts/fetch_goog_json.py
           python3 scripts/fetch_cloud_json.py
 
+      - name: Ensure files exist for release (manual trigger)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          # 手动触发时，确保所有文件都存在
+          if [ ! -f "data/goog.json" ]; then
+            echo "下载 goog.json..."
+            python3 scripts/fetch_goog_json.py
+          fi
+          if [ ! -f "data/cloud.json" ]; then
+            echo "下载 cloud.json..."
+            python3 scripts/fetch_cloud_json.py
+          fi
+          if [ ! -f "data/goog.cidr.txt" ]; then
+            echo "生成 goog.cidr.txt..."
+            python3 scripts/export_goog_cidrs.py
+          fi
+          if [ ! -f "data/cloud.cidr.txt" ]; then
+            echo "生成 cloud.cidr.txt..."
+            python3 scripts/export_cloud_cidrs.py
+          fi
+
       - name: Export CIDR (pure list)
         if: steps.remote.outputs.changed == 'true'
         run: |
@@ -60,14 +81,27 @@ jobs:
           fi
 
       - name: Generate release notes
-        if: steps.commit.outputs.committed == 'true'
         id: release_notes
+        if: steps.commit.outputs.committed == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           python3 scripts/generate_release_notes.py > release_notes.txt
           cat release_notes.txt
 
+      - name: Verify files exist before release
+        if: steps.commit.outputs.committed == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          echo "检查 release 文件..."
+          for file in data/goog.json data/cloud.json data/goog.cidr.txt data/cloud.cidr.txt; do
+            if [ -f "$file" ]; then
+              echo "✓ $file 存在 ($(wc -c < "$file") bytes)"
+            else
+              echo "✗ 错误: $file 不存在"
+              exit 1
+            fi
+          done
+
       - name: Create Release
-        if: steps.commit.outputs.committed == 'true'
+        if: steps.commit.outputs.committed == 'true' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v$(date +'%Y%m%d-%H%M%S')
