@@ -3,8 +3,8 @@ name: Update Google IP CIDR lists
 on:
   workflow_dispatch: {}
   schedule:
-    # 每天 02:30 UTC 运行一次（你可按需调整）
-    - cron: "30 2 * * *"
+    # 每小时整点 UTC 运行一次
+    - cron: "0 * * * *"
 
 permissions:
   contents: write
