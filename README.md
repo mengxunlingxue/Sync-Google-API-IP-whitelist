@@ -1,6 +1,6 @@
 # Sync-Google-API-IP-whitelist
 
-同步 Google API 和其他谷歌服务的默认网域使用的 IP 地址范围
+同步 Google API 和其他谷歌云服务的默认网域使用的 IP 地址范围
 
 ## 数据源
 
@@ -63,7 +63,7 @@ python3 scripts/export_cloud_cidrs.py --out -
 - 若两者都未变化，则直接结束，不更新也不提交
 
 **生成的文件**（位于 `data/` 目录）：
-- `goog.cidr.txt` - 所有 Google 服务的 IP 范围（纯 CIDR 列表）
+- `goog.cidr.txt` - 所有 Google API服务的 IP 范围（纯 CIDR 列表）
 - `cloud.cidr.txt` - Google Cloud 的 IP 范围（纯 CIDR 列表）
 - `ipranges.remote.json` - 远端元数据（用于变化检测）
 
